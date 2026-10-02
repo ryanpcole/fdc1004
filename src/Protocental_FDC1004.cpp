@@ -153,6 +153,64 @@ float FDC1004::getCapacitancePicofarads(fdc1004_channel_t channel)
     return measurement.capacitance_pf;
 }
 
+fdc1004_differential_measurement_t FDC1004::getDifferentialMeasurement(fdc1004_channel_t channel_a,
+                                                                       fdc1004_channel_t channel_b)
+{
+    fdc1004_differential_measurement_t result;
+    result.raw_value = 0;
+    result.error = FDC1004_ERROR_INVALID_PARAMETER;
+
+    if (!_device_initialized)
+    {
+        result.error = FDC1004_ERROR_DEVICE_NOT_FOUND;
+        return result;
+    }
+
+    if (!isValidChannel(channel_a) || !isValidChannel(channel_b))
+    {
+        return result;
+    }
+
+    // This part essentially does what measureChannel does but for double ended
+    // Need to configure each time because taking a 'high-level' single channel
+    // measurement will configure the measure incorrectly.
+    fdc1004_measurement_t raw_measurement = (fdc1004_measurement_t)channel_a;
+    result.error = configureMeasurementDifferential(raw_measurement, channel_a, channel_b);
+    if (result.error != FDC1004_SUCCESS)
+    {
+        return result;
+    }
+
+    result.error = triggerSingleMeasurement(raw_measurement, _sample_rate);
+    if (result.error != FDC1004_SUCCESS)
+    {
+        return result;
+    }
+
+    delay(getMeasurementDelay());
+
+    // Only really reads channel_a since that's what we care about
+    uint16_t measurement_data[2];
+    result.error = readMeasurement(raw_measurement, measurement_data);
+    if (result.error == FDC1004_SUCCESS)
+    {
+        result.raw_value = (int16_t)measurement_data[0]; // only the msb
+        result.capacitance_pf = convertToPicofarads(result.raw_value, 0); // <Not sure id this is the right way to define capdac
+    }
+
+    return result;
+}
+
+float FDC1004::getDifferentialCapacitancePicofarads(
+    fdc1004_channel_t channel_a,
+    fdc1004_channel_t channel_b
+)
+{
+    fdc1004_differential_measurement_t diffmeasurement = getDifferentialMeasurement(channel_a, channel_b);
+    return diffmeasurement.capacitance_pf;
+}
+
+
 int32_t FDC1004::getCapacitance(uint8_t channel)
 {
     // Legacy function - returns femtofarads
@@ -240,6 +298,22 @@ fdc1004_error_t FDC1004::configureMeasurementSingle(fdc1004_measurement_t measur
     }
     
     configuration_data |= ((uint16_t)capdac) << FDC1004_CONF_MEAS_CAPDAC_SHIFT;          // CAPDAC value
+
+    return writeRegister16(MEASUREMENT_CONFIG_REGISTERS[measurement], configuration_data);
+}
+
+fdc1004_error_t FDC1004::configureMeasurementDifferential(fdc1004_measurement_t measurement,
+                                                          fdc1004_channel_t channel_a,
+                                                          fdc1004_channel_t channel_b)
+{
+    if (!isValidMeasurement(measurement) || !isValidChannel(channel_a) || !isValidChannel(channel_b))
+    {
+        return FDC1004_ERROR_INVALID_PARAMETER;
+    }
+
+    uint16_t configuration_data = 0;
+    configuration_data |= ((uint16_t)channel_a) << FDC1004_CONF_MEAS_CHA_SHIFT;
+    configuration_data |= ((uint16_t)channel_b) << FDC1004_CONF_MEAS_CHB_SHIFT;
 
     return writeRegister16(MEASUREMENT_CONFIG_REGISTERS[measurement], configuration_data);
 }

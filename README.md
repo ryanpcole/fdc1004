@@ -1,11 +1,6 @@
 Protocentral FDC1004 capacitance sensor breakout board
+modified for differential sensing of liquid levels
 ================================
-[![Compile Examples](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/workflows/Compile%20Examples/badge.svg)](https://github.com/Protocentral/ProtoCentral_fdc1004_breakout/actions?workflow=Compile+Examples) 
-
-### Don't have one? [Buy it here](https://protocentral.com/product/protocentral-fdc1004-capacitance-sensor-breakout-board/)
-### Looking for a more integrated solution? [Check out our FDC1004 & ESP32-S3 based Sensything CAP](https://protocentral.com/product/protocentral-sensything-cap-wireless-pulse-sensor-kit-based-on-afe4400-esp32/)
-
-![FDC1004 Breakout](docs/images/fdc1004_brk.jpg) 
 
 The FDC1004 is a single-chip IC for capacitance measurement for application including proximity sensing and liquid level sensing. This is based on the concept of measuring capacitance of an electrode with respect to ground.
 
@@ -57,6 +52,20 @@ void setup() {
     sensor.begin();
 }
 ```
+
+### Differential Measurements
+
+Measure the signed difference between two CIN inputs with `getDifferentialMeasurement()`. The first channel is CHA and the second is CHB. This API returns the signed upper measurement word; it does not apply CAPDAC conversion or automatic adjustment.
+
+```cpp
+fdc1004_differential_measurement_t result = sensor.getDifferentialMeasurement(
+    FDC1004_CHANNEL_0, FDC1004_CHANNEL_1);
+if (result.error == FDC1004_SUCCESS) {
+    int16_t raw_difference = result.raw_value;
+}
+```
+
+See [Example3-differential](examples/Example3-differential/Example3-differential.ino) for a complete sketch.
 
 ## For further details, refer [the documentation on FDC1004 breakout board](https://docs.protocentral.com/getting-started-with-FDC1004/)
 

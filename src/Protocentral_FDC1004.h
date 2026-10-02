@@ -149,6 +149,17 @@ typedef struct {
     uint8_t capdac_used;        ///< CAPDAC value used for measurement
 } fdc1004_capacitance_t;
 
+/**
+ * @brief Raw Differential measurement result
+ * todo - add the ability to return the differential measurement as pF
+ */
+typedef struct {
+    int16_t raw_value;          ///< Signed raw upper measurement word
+    float capacitance_pf;       /// < raw upper measurmen word converted to pF
+    fdc1004_error_t error;      ///< Measurement status
+} fdc1004_differential_measurement_t;
+
+
 // =============================================================================
 // FDC1004 Class Declaration
 // =============================================================================
@@ -158,7 +169,7 @@ typedef struct {
  * 
  * This class provides a high-level interface for the Texas Instruments FDC1004
  * 4-channel capacitance-to-digital converter. It supports single-ended measurements
- * with automatic CAPDAC adjustment for extended range.
+ * with automatic CAPDAC adjustment and differential measurements between CIN inputs.
  * 
  * Example usage:
  * @code
@@ -219,13 +230,31 @@ public:
      * @return Capacitance measurement structure
      */
     fdc1004_capacitance_t getCapacitanceMeasurement(fdc1004_channel_t channel);
-    
+
     /**
      * @brief Get capacitance in picofarads (simplified interface)
      * @param channel Channel to measure (0-3)
      * @return Capacitance in picofarads, or NaN on error
      */
     float getCapacitancePicofarads(fdc1004_channel_t channel);
+
+    /**
+     * @brief Get a signed raw differential measurement between two channels
+     * @param channel_a Positive input channel (also selects the measurement slot)
+     * @param channel_b Negative input channel
+     * @return Differential result with raw value and status
+     */
+    fdc1004_differential_measurement_t getDifferentialMeasurement(fdc1004_channel_t channel_a,
+                                                                  fdc1004_channel_t channel_b);
+    
+    /**
+     * @brief Get capacitance in picofarads from differential measurement
+     * @param channel_a Positive input channel (and measurement slot)
+     * @param channel_b Negative input channel
+     * @return Capacitance in picofarads, or NaN on error
+     */
+    float getDifferentialCapacitancePicofarads(fdc1004_channel_t channel_a,
+                                               fdc1004_channel_t channel_b);
     
     /**
      * @brief Legacy function for backward compatibility
@@ -280,6 +309,17 @@ public:
     fdc1004_error_t configureMeasurementSingle(fdc1004_measurement_t measurement, 
                                                fdc1004_channel_t channel, 
                                                uint8_t capdac);
+
+    /**
+     * @brief Configure a differential measurement between two input channels
+     * @param measurement Measurement slot (0-3)
+     * @param channel_a Positive input channel (0-3)
+     * @param channel_b Negative input channel (0-3)
+     * @return Error code
+     */
+    fdc1004_error_t configureMeasurementDifferential(fdc1004_measurement_t measurement,
+                                                     fdc1004_channel_t channel_a,
+                                                     fdc1004_channel_t channel_b);
     
     /**
      * @brief Trigger a single measurement
