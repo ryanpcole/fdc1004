@@ -18,7 +18,7 @@ void setup()
         }
     }
 
-    Serial.println("Differential measurement: CIN0 (CHA) - CIN3 (CHB)");
+    Serial.println("Differential measurement: CIN1 (CHA) - CIN4 (CHB)");
 }
 
 void loop()
