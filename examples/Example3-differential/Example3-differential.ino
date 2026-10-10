@@ -4,6 +4,9 @@
 
 FDC1004 sensor(FDC1004_RATE_100HZ);
 
+#define POSCHANNEL FDC1004_CHANNEL_0
+#define NEGCHANNEL FDC1004_CHANNEL_3
+
 void setup()
 {
     Serial.begin(115200);
@@ -23,19 +26,26 @@ void setup()
 
 void loop()
 {
-    fdc1004_differential_measurement_t measurement = sensor.getDifferentialMeasurement(
-        FDC1004_CHANNEL_0, FDC1004_CHANNEL_3);
+    // Do the differential measurements
+    float diffcap = sensor.getDifferentialCapacitancePicofarads(
+        POSCHANNEL, NEGCHANNEL);
 
-    if (measurement.error == FDC1004_SUCCESS)
-    {
-        Serial.print("Signed raw difference: ");
-        Serial.println(measurement.raw_value);
-    }
-    else
-    {
-        Serial.print("Measurement failed, error: ");
-        Serial.println((int)measurement.error);
-    }
+    Serial.print("Diff: ");
+    Serial.print(diffcap);
+    Serial.println(" pF");
+
+
+    // Do single ended measuremnts for troubleshooting
+    float poscappf = sensor.getCapacitancePicofarads(POSCHANNEL);
+    Serial.print("CH1: ");
+    Serial.print(poscappf);
+    Serial.println(" pF");
+    
+    float negcappf = sensor.getCapacitancePicofarads(NEGCHANNEL);
+    Serial.print("CH4: ");
+    Serial.print(negcappf);
+    Serial.println(" pF");
 
     delay(500);
+
 }
